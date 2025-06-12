@@ -30,9 +30,7 @@
 					);
 					
 					shellHook = ''
-						export CXX=clang++
-						export CXXFLAGS="-std=cpp98 -Wall -Werror -Wextra"
-						printf "\n\033[0;90mCPP env loaded for: \033[38;5;220m${system}\033[0m\n"
+						printf "\n\033[0;90mInception env loaded for: \033[38;5;220m${system}\033[0m\n"
 					'';
 					};
 				}
