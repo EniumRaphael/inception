@@ -3,59 +3,24 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: sben-tay <sben-tay@student.42.fr>          +#+  +:+       +#+         #
+#    By: rparodi <rparodi@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2025/05/02 15:40:00 by rparodi           #+#    #+#              #
-#    Updated: 2025/06/10 13:40:37 by rparodi          ###   ########.fr        #
+#    Created: 2025/06/12 18:09:23 by rparodi           #+#    #+#              #
+#    Updated: 2025/06/13 14:45:19 by rparodi          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
+SECRET = $(HOME)/secrets
 
-# Name
-NAME = ircserv
+MAIN = $(shell pwd)/srcs
 
-# Commands
-CXX = c++
-RM = rm -rf
+BASE_CONTAINERS = $(MAIN)/requirements
+NGINX = $(BASE_CONTAINERS)/nginx
+MARIADB = $(BASE_CONTAINERS)/mariadb
+WORDPRESS = $(BASE_CONTAINERS)/wordpress
 
-# Flags
-#  Mandatory flags for 42
-CXXFLAGS = -Werror -Wextra -Wall -std=c++98
-SESSION = test-irc
-
-# Sources
-SRC =	sources/channel/channel.cpp \
-		sources/commands/cap.cpp \
-		sources/commands/commands.cpp \
-		sources/commands/invite.cpp \
-		sources/commands/join.cpp \
-		sources/commands/kick.cpp \
-		sources/commands/list.cpp \
-		sources/commands/modes.cpp \
-		sources/commands/nick.cpp \
-		sources/commands/notice.cpp \
-		sources/commands/part.cpp \
-		sources/commands/pass.cpp \
-		sources/commands/ping.cpp \
-		sources/commands/pong.cpp \
-		sources/commands/privmsg.cpp \
-		sources/commands/userCmd.cpp \
-		sources/core/PollManager.cpp \
-		sources/core/Server.cpp \
-		sources/core/check.cpp \
-		sources/core/main.cpp \
-		sources/core/parser.cpp \
-		sources/user/user.cpp
-
-INC_DIR =	include/core \
-			include/commands \
-			include
-
-CPPFLAGS = $(addprefix -I, $(INC_DIR)) -MMD -MP
-
-# Objects
-OBJDIRNAME = ./build
-OBJ = $(addprefix $(OBJDIRNAME)/,$(SRC:.cpp=.o))
+#Setup
+PACK_MAN = pacman -S
 
 # Colors
 GREEN = \033[32m
@@ -64,74 +29,79 @@ RED = \033[0;31m
 GOLD = \033[38;5;220m
 END = \033[0m
 
-# Rules
+all: header get_secret build footer
 
-# All (make all)
-all: header $(NAME) footer
+build:
+	docker compose -f $(MAIN)/docker-compose.yml up --build -d
 
-# Clean (make clean)
-clean:
-	@printf '$(GREY) Removing $(END)$(RED)Objects$(END)\n'
-	@printf '$(GREY) Removing $(END)$(RED)Objects Folder$(END)\n'
-	@$(RM) $(OBJDIRNAME)
+stop:
+	@docker compose -f $(MAIN)/docker-compose.yml down
+	@if [ $(shell docker ps -q | wc -l) -ne 0 ]; then \
+		docker stop $(docker ps -q); \
+	fi
+	@printf '$(GREY)Stopping all the $(RED)Containers$(END)\n';
 
-# Clean (make fclean)
+nginx:
+	@if docker image inspect nginx-test:latest > /dev/null 2>&1; then \
+		printf '$(GREY)Suppressing the image named: $(RED)nginx-test$(END)\n'; \
+		docker rmi nginx-test:latest; \
+	fi
+	@printf '$(GREY)Build the container $(GREEN)nginx$(END)\n'; \
+	docker build -t nginx-test $(NGINX)
+
+mariadb:
+	@if docker image inspect mariadb-test:latest > /dev/null 2>&1; then \
+		printf '$(GREY)Suppressing the image named: $(RED)mariadb-test$(END)\n'; \
+		docker rmi mariadb-test:latest; \
+	fi
+	@printf '$(GREY)Build the container $(GREEN)mariadb$(END)\n'; \
+	docker build -t mariadb-test $(MARIADB)
+
+wordpress:
+	@if docker image inspect wordpress-test:latest > /dev/null 2>&1; then \
+		printf '$(GREY)Suppressing the image named: $(RED)wordpress-test$(END)\n'; \
+		docker rmi wordpress-test:latest; \
+	fi
+	@printf '$(GREY)Build the container $(GREEN)wordpress$(END)\n'; \
+	docker build -t wordpress-test $(WORDPRESS)
+
+get_secret:
+	@if [ ! -d $(SECRET) ]; then \
+		printf "$(RED)The secrets home folder doesn't exist$(END)\n"; \
+		exit 1; \
+	elif [ ! -d $(shell pwd)/secrets ]; then \
+		cp -r $(SECRET) $(shell pwd)/secrets; \
+		printf '$(GREY)Creating the folder $(GREEN)$(shell pwd)/secrets$(END)\n'; \
+	else \
+		printf '$(GREY)The secrets is $(RED)already existing$(END)\n'; \
+	fi
+
+clean: stop
+	@printf '$(GREY)Suppressing all the $(RED)Containers$(END)\n';
+	@if [ $(shell docker ps -aq | wc -l) -ne 0 ]; then \
+		docker rm -f $(shell docker ps -aq); \
+	fi
+
 fclean: clean
-	@printf '$(GREY) Removing $(END)$(RED)Program$(END)\n'
-	@$(RM) $(NAME) @echo ""
-
-# Restart (make re)
-re: header fclean all
-
-# Dependences for all
-$(NAME): $(OBJ)
-	@mkdir -p $(OBJDIRNAME)
-	@printf '$(GREY) Creating $(END)$(GREEN)$(OBJDIRNAME)$(END)\n'
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $(NAME) $(OBJ) #-fuse-ld=lld
-
-# Creating the objects
-$(OBJDIRNAME)/%.o: %.cpp
-	@mkdir -p $(dir $@)
-	@printf '$(GREY) Compiling $(END)$(GREEN)$<$(END)\n'
-	@$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o $@ -c $<
-
-debug: CPPFLAGS += -D DEBUG=1
-debug: CXXFLAGS += -g
-# debug: CXXFLAGS += -fsanitize=address
-debug: re
-
-PORT ?= 4243
-
-test: debug
-	@printf '$(GREY) now running with\n\t- Port:\t\t$(GREEN)$(PORT)$(GREY)\n\t- Password:\t$(GREEN)irc$(END)\n'
-	@if tmux has-session -t $(SESSION) 2>/dev/null; then \
-		tmux kill-session -t $(SESSION); \
+	@if [ $(shell docker images -aq | wc -l) -ne 0 ]; then \
+		docker rmi -f $(shell docker images -aq); \
 	fi
-	@tmux new-session -d -s $(SESSION) \
-		'bash -lc "./$(NAME) $(PORT) irc; exec bash"'
-	@tmux split-window -h -p 70 -t $(SESSION):0 \
-		'bash -lc "irssi -c localhost -p $(PORT) -w irc || exec yes \"irssi exit code: $?\""'
-	@tmux split-window -v -p 50 -t $(SESSION):0.1 \
-		'bash -lc "nc localhost $(PORT) || exec yes \"netcat exit code: $?\""'
-	@tmux split-window -v -p 50 -t $(SESSION):0.2 \
-		'bash -lc "nc localhost $(PORT) || exec yes \"netcat exit code: $?\""'
-	@tmux split-window -v -p 50 -t $(SESSION):0.3 \
-		'bash -lc "nc localhost $(PORT) || exec yes \"netcat exit code: $?\""'
-	@tmux attach -t $(SESSION)
-
-run: all
-	@printf '$(GREY) now running with\n\t- Port:\t\t$(GREEN)$(PORT)$(GREY)\n\t- Password:\t$(GREEN)irc$(END)\n'
-	@if tmux has-session -t $(SESSION) 2>/dev/null; then \
-		tmux kill-session -t $(SESSION); \
+	@printf '$(GREY)Suppressing all the $(RED)Images$(END)\n';
+	@if [ $(shell docker volume ls -q | wc -l) -ne 0 ]; then \
+		docker volume rm $(shell docker volume ls -q); \
 	fi
-	@tmux new-session -d -s $(SESSION) \
-		'bash -lc "./$(NAME) $(PORT) irc; exec bash"'
-	@tmux split-window -h -p 70 -t $(SESSION):0 \
-		'bash -lc "irssi -c localhost -p $(PORT) -w irc || exec yes \"irssi exit code: $?\""'
-	@tmux split-window -v -p 50 -t $(SESSION):0.1 \
-		'bash -lc "nc localhost $(PORT) || exec yes \"netcat exit code: $?\""'
-	@tmux attach -t $(SESSION)
+	@printf '$(GREY)Suppressing all the $(RED)Volumes$(END)\n';
+	@if [ $(shell docker network ls | grep -v "bridge\|host\|none\|NETWORK" | awk '{print $1}' | wc -l) -ne 0 ]; then \
+		docker network rm $(shell docker network ls | grep -v "bridge\|host\|none\|NETWORK" | awk '{print $1}'); \
+	fi
+	@printf '$(GREY)Suppressing all the $(RED)Network$(END)\n';
 
+re: header fclean all footer
+
+setup_vm:
+	sudo $(PACK_MAN) docker docker-compose
+	sudo usermod -aG docker $(shell whoami)
+	@printf '$(GREY)Virtual Machine now$(GREEN)setuped$(END)\n'; \
 
 #	Header
 header:
@@ -142,7 +112,7 @@ header:
 		@printf '$(GOLD)      *******           *      ******* $(END)\n'
 		@printf '$(GOLD)     ******                  ******* $(END)\n'
 		@printf '$(GOLD)  *******                  ******* $(END)\n'
-		@printf '$(GOLD) *******************    *******      * $(END)\n'
+		@printf '$(GOLD) *******************     ******      * $(END)\n'
 		@printf '$(GOLD) *******************    *******    *** $(END)\n'
 		@printf '$(GOLD)              ******    ******* ****** $(END)\n'
 		@printf '$(GOLD)              ******  $(END)\n'
@@ -162,22 +132,7 @@ footer:
 		@printf "$(GOLD)                  /| |   | |\\_//$(END)\n"
 		@printf "$(GOLD)                  \\| |._.| |/-\`$(END)\n"
 		@printf "$(GOLD)                   '\"'   '\"'$(END)\n"
-		@printf '              $(GREY)The compilation is$(END) $(GOLD)finished$(END)\n               $(GREY)Have a good $(END)$(GOLD)evaluation !$(END)\n'
-
-clangd:
-	@printf "CompileFlags:\n" > ./.clangd
-	@printf "  Add:\n" >> ./.clangd
-	@printf "    - \"-xc++\"\n" >> ./.clangd
-	@for FLAG in $(CXXFLAGS); do \
-		printf "    - \"$$FLAG\"\n" >> ./.clangd; \
-	done
-	@printf "    - \"-I"$(shell pwd)"/\"\n" >> .clangd;
-	@for file in $(INC_DIR); do \
-		printf "    - \"-I"$(shell pwd)"/"$$file"\"\n" >> .clangd; \
-	done
-	@printf "\n" >> ./.clangd
-	@printf '$(GREY) Now parsing settings is set in $(END)$(GREEN)./.clangd$(END)\n'
+		@printf '              $(GREY)The build is $(GOLD)finished$(END)\n               $(GREY)Have a good $(GOLD)evaluation !$(END)\n'
 
 #	Phony
-.PHONY: all clean fclean re clangd debug test
--include	${OBJ:.o=.d}
+.PHONY: all nginx mariadb wordpress get_secret clean fclean re
