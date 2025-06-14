@@ -1,0 +1,50 @@
+services:
+
+  mariadb:
+    build: ./requirements/mariadb
+    container_name: mariadb
+    image: mariadb
+    env_file:
+      - ../secrets/.env
+    volumes:
+      - wp_db:/var/lib/mysql
+    networks:
+      - inception
+    restart: always
+
+  wordpress:
+    container_name: wordpress
+    image: wordpress
+    build: ./requirements/wordpress
+    env_file:
+      - ../secrets/.env
+    depends_on:
+      - mariadb
+    networks:
+      - inception
+
+  nginx:
+    container_name: nginx
+    image: nginx
+    env_file:
+      - ../secrets/.env
+    build: ./requirements/nginx
+    extra_hosts:
+      - "rparodi.42.fr:127.0.0.1"
+    ports:
+      - 443:443
+    volumes:
+      - wp_files:/var/www/html
+    depends_on:
+      - wordpress
+    networks:
+      - inception
+    restart: always
+
+volumes:
+  wp_files:
+  wp_db:
+
+networks:
+  inception:
+    driver: bridge
