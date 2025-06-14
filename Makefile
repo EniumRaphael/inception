@@ -6,7 +6,7 @@
 #    By: rparodi <rparodi@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/12 18:09:23 by rparodi           #+#    #+#              #
-#    Updated: 2025/06/13 14:45:19 by rparodi          ###   ########.fr        #
+#    Updated: 2025/06/14 18:26:21 by rparodi          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -20,7 +20,7 @@ MARIADB = $(BASE_CONTAINERS)/mariadb
 WORDPRESS = $(BASE_CONTAINERS)/wordpress
 
 #Setup
-PACK_MAN = pacman -S
+PACK_MAN = pacman -Syu --noconfirm
 
 # Colors
 GREEN = \033[32m
