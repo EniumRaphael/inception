@@ -34,10 +34,10 @@ all: header get_secret build footer
 build:
 	docker compose -f $(MAIN)/docker-compose.yml up --build -d
 
-stop:
-	@docker compose -f $(MAIN)/docker-compose.yml down
+stop: header
+	@docker compose -f $(MAIN)/docker-compose.yml stop
 	@if [ $(shell docker ps -q | wc -l) -ne 0 ]; then \
-		docker stop $(docker ps -q); \
+		docker stop $(shell docker ps -q); \
 	fi
 	@printf '$(GREY)Stopping all the $(RED)Containers$(END)\n';
 
@@ -83,25 +83,23 @@ clean: stop
 	fi
 
 fclean: clean
-	@if [ $(shell docker images -aq | wc -l) -ne 0 ]; then \
-		docker rmi -f $(shell docker images -aq); \
-	fi
+	docker image prune -f -a
 	@printf '$(GREY)Suppressing all the $(RED)Images$(END)\n';
-	@if [ $(shell docker volume ls -q | wc -l) -ne 0 ]; then \
-		docker volume rm $(shell docker volume ls -q); \
-	fi
+	docker volume prune -f
 	@printf '$(GREY)Suppressing all the $(RED)Volumes$(END)\n';
-	@if [ $(shell docker network ls | grep -v "bridge\|host\|none\|NETWORK" | awk '{print $1}' | wc -l) -ne 0 ]; then \
-		docker network rm $(shell docker network ls | grep -v "bridge\|host\|none\|NETWORK" | awk '{print $1}'); \
-	fi
+	docker system prune -f -a
 	@printf '$(GREY)Suppressing all the $(RED)Network$(END)\n';
 
 re: header fclean all footer
 
 setup_vm:
-	sudo $(PACK_MAN) docker docker-compose
+	echo "127.0.0.1 rparodi.42.fr" | sudo tee -a /etc/hosts &> /dev/null
+	@printf "$(GREY)Adding the custom host $(GREEN)rparodi.42.fr$(END)\n"; \
+	sudo $(PACK_MAN) docker docker-compose docker-buildx
+	@printf "$(GREY)Install the $(GREEN)docker docker-compose docker-buildx packages$(END)\n"; \
 	sudo usermod -aG docker $(shell whoami)
-	@printf '$(GREY)Virtual Machine now$(GREEN)setuped$(END)\n'; \
+	@printf "$(GREY)User add to the $(GOLD)docker's group$(END)\n"; \
+	@printf "$(GREY)Virtual Machine now $(GOLD)setuped$(END)\n"; \
 
 #	Header
 header:
