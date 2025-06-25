@@ -12,8 +12,6 @@ RUN chmod +x /usr/bin/generate_ssl_certificate
 
 RUN /usr/bin/generate_ssl_certificate
 
-USER nginx
-
 EXPOSE 443
 
 CMD ["nginx", "-g", "daemon off;"]

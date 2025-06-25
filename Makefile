@@ -6,7 +6,7 @@
 #    By: rparodi <rparodi@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/12 18:09:23 by rparodi           #+#    #+#              #
-#    Updated: 2025/06/14 18:26:21 by rparodi          ###   ########.fr        #
+#    Updated: 2025/06/17 00:07:38 by rparodi          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -92,14 +92,16 @@ fclean: clean
 
 re: header fclean all footer
 
-setup_vm:
-	echo "127.0.0.1 rparodi.42.fr" | sudo tee -a /etc/hosts &> /dev/null
-	@printf "$(GREY)Adding the custom host $(GREEN)rparodi.42.fr$(END)\n"; \
-	sudo $(PACK_MAN) docker docker-compose docker-buildx
-	@printf "$(GREY)Install the $(GREEN)docker docker-compose docker-buildx packages$(END)\n"; \
-	sudo usermod -aG docker $(shell whoami)
-	@printf "$(GREY)User add to the $(GOLD)docker's group$(END)\n"; \
-	@printf "$(GREY)Virtual Machine now $(GOLD)setuped$(END)\n"; \
+setup_vm: header
+	@echo "127.0.0.1 rparodi.42.fr" | sudo tee -a /etc/hosts &> /dev/null
+	@printf "$(GREY)Adding the custom host $(GREEN)rparodi.42.fr$(END)\n";
+	@sudo $(PACK_MAN) docker docker-compose docker-buildx &> /dev/null
+	@printf "$(GREY)Install the $(GREEN)docker docker-compose docker-buildx packages$(END)\n";
+	@sudo usermod -aG docker $(shell whoami)
+	@printf "$(GREY)User add to the $(GREEN)docker's group$(END)\n";
+	@printf "$(GREY)Virtual Machine now $(GOLD)setuped$(END)\n";
+
+setup: setup_vm
 
 #	Header
 header:
@@ -133,4 +135,4 @@ footer:
 		@printf '              $(GREY)The build is $(GOLD)finished$(END)\n               $(GREY)Have a good $(GOLD)evaluation !$(END)\n'
 
 #	Phony
-.PHONY: all nginx mariadb wordpress get_secret clean fclean re
+.PHONY: all nginx mariadb wordpress get_secret clean fclean re setup setup_vm
