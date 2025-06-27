@@ -20,6 +20,10 @@ services:
       - ../secrets/.env
     depends_on:
       - mariadb
+    ports:
+      - 9000:9000
+    volumes:
+      - wp_files:/var/www/html
     networks:
       - inception
 

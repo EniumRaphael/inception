@@ -6,7 +6,7 @@
 #    By: rparodi <rparodi@student.42.fr>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/12 18:09:23 by rparodi           #+#    #+#              #
-#    Updated: 2025/06/17 00:07:38 by rparodi          ###   ########.fr        #
+#    Updated: 2025/06/27 17:23:54 by rparodi          ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -66,15 +66,16 @@ wordpress:
 	docker build -t wordpress-test $(WORDPRESS)
 
 get_secret:
-	@if [ ! -d $(SECRET) ]; then \
-		printf "$(RED)The secrets home folder doesn't exist$(END)\n"; \
-		exit 1; \
-	elif [ ! -d $(shell pwd)/secrets ]; then \
-		cp -r $(SECRET) $(shell pwd)/secrets; \
-		printf '$(GREY)Creating the folder $(GREEN)$(shell pwd)/secrets$(END)\n'; \
-	else \
-		printf '$(GREY)The secrets is $(RED)already existing$(END)\n'; \
-	fi
+
+#@if [ ! -d $(SECRET) ]; then \
+#	printf "$(RED)The secrets home folder doesn't exist$(END)\n"; \
+#	exit 1; \
+#elif [ ! -d $(shell pwd)/secrets ]; then \
+#	cp -r $(SECRET) $(shell pwd)/secrets; \
+#	printf '$(GREY)Creating the folder $(GREEN)$(shell pwd)/secrets$(END)\n'; \
+#else \
+#	printf '$(GREY)The secrets is $(RED)already existing$(END)\n'; \
+#fi
 
 clean: stop
 	@printf '$(GREY)Suppressing all the $(RED)Containers$(END)\n';
@@ -85,7 +86,7 @@ clean: stop
 fclean: clean
 	docker image prune -f -a
 	@printf '$(GREY)Suppressing all the $(RED)Images$(END)\n';
-	docker volume prune -f
+	docker volume prune -fa
 	@printf '$(GREY)Suppressing all the $(RED)Volumes$(END)\n';
 	docker system prune -f -a
 	@printf '$(GREY)Suppressing all the $(RED)Network$(END)\n';
